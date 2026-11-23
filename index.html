@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puzzle Palace Gallery</title>
+<meta name="description" content="Community jigsaw puzzles for the Puzzle Palace VRChat world.">
+<style>
+:root{--bg:#f4f5f6;--card:#fff;--line:#dde1e5;--text:#1b1f23;--muted:#5d6670;--accent:#11804f}
+@media (prefers-color-scheme:dark){:root{--bg:#141618;--card:#1f2326;--line:#343a40;--text:#e9ecef;--muted:#9aa3ab;--accent:#38e08f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:30px;margin:0}
+.muted{color:var(--muted)}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin-top:22px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;background:#888}
+.item div{padding:10px 12px}
+.item b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot{font-variant-numeric:tabular-nums}
+.empty{margin-top:40px;padding:28px;border:1px dashed var(--line);border-radius:12px;text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <div class="bar">
+    <div>
+      <h1>Puzzle Palace Gallery</h1>
+      <p class="muted" style="margin:4px 0 0">Every picture here can be played in the COMMUNITY tab in the Puzzle Palace VRChat world.</p>
+    </div>
+    <span class="muted" id="count"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+(async () => {
+  const grid = document.getElementById("grid");
+  let data;
+  try {
+    data = await (await fetch("catalog.json", { cache: "no-cache" })).json();
+  } catch (e) {
+    grid.outerHTML = '<p class="empty">The catalog could not be loaded.</p>';
+    return;
+  }
+  const items = data.items || [];
+  document.getElementById("count").textContent = items.length + " puzzle" + (items.length === 1 ? "" : "s");
+  if (!items.length) {
+    grid.outerHTML = '<p class="empty">No community puzzles yet.</p>';
+    return;
+  }
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    if (it.t === "(removed)") continue;
+    const slot = String(i + 1).padStart(4, "0");
+    const card = document.createElement("a");
+    card.className = "item";
+    card.href = "images/" + slot + ".jpg";
+    card.style.color = "inherit";
+    card.style.textDecoration = "none";
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.src = "images/" + slot + ".jpg";
+    img.alt = it.t || ("Puzzle " + slot);
+    const info = document.createElement("div");
+    const title = document.createElement("b");
+    title.textContent = it.t || "Untitled";
+    const meta = document.createElement("span");
+    meta.className = "muted slot";
+    meta.textContent = "#" + slot + (it.a ? "  ·  by " + it.a : "");
+    info.append(title, meta);
+    card.append(img, info);
+    grid.append(card);
+  }
+})();
+</script>
+</body>
+</html>

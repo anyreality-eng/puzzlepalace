@@ -1,0 +1,70 @@
+name: Publish puzzle gallery
+
+# Drop images into incoming/ (on github.com: Add file > Upload files). This
+# turns them into gallery slots, thumbnails and catalog.json, commits that,
+# and publishes the site to GitHub Pages (Settings > Pages > Source: GitHub Actions).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      remove_slot:
+        description: 'Slot number to blank out (optional, 0 = none)'
+        required: false
+        default: '0'
+
+concurrency:
+  group: gallery-publish
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Process incoming images
+        shell: pwsh
+        run: |
+          $remove = 0
+          [int]::TryParse('${{ github.event.inputs.remove_slot }}', [ref]$remove) | Out-Null
+          ./tools/process_incoming.ps1 -Remove $remove
+
+      - name: Commit gallery update
+        shell: pwsh
+        run: |
+          git config user.name "puzzle-gallery-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A images thumbs catalog.json incoming
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { Write-Host "Nothing new to commit"; exit 0 }
+          git commit -m "Gallery: add puzzles from incoming/"
+          git push
+
+  deploy:
+    needs: process
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Collect site files
+        run: |
+          mkdir -p _site
+          cp -r images thumbs catalog.json index.html .nojekyll _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
