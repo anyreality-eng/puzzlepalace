@@ -229,6 +229,7 @@ if ($RebuildThumbs) {
     $pages = [Math]::Ceiling($items.Count / $PerPage)
     for ($p = 0; $p -lt $pages; $p++) { [void]$dirtyPages.Add($p) }
 }
+if ($dirtyPages.Count -eq 0) { Write-Host "Nothing to process."; exit 0 }
 foreach ($p in $dirtyPages) { Build-ThumbPage $p $items }
 Write-Catalog $items
 Write-Host ("Catalog: {0} puzzle(s), {1} thumbnail page(s) rebuilt." -f $items.Count, $dirtyPages.Count)
